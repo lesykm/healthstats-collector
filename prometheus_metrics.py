@@ -19,6 +19,7 @@ class PrometheusMetrics:
         self._steps(data)
         self._floors(data)
         self._calories(data)
+        self._stress(data)
 
     def weight(self, data):
         if (
@@ -83,9 +84,7 @@ class PrometheusMetrics:
         steps_daily_goal = self.gauge("steps_daily_goal", "Daily step goal")
         distance_meters = self.gauge("distance_meters", "Total distance in meters")
         active_seconds = self.gauge("active_seconds", "Seconds in movement")
-        sedentary_seconds = self.gauge(
-            "sedentary_seconds", "Seconds in sedentary position"
-        )
+        sedentary_seconds = self.gauge("sedentary_seconds", "Seconds in sedentary position")
 
         # set metrics values
         steps.set(data["totalSteps"])
@@ -142,9 +141,7 @@ class PrometheusMetrics:
 
         # create metrics
         floors_ascended = self.gauge("floors_ascended", "Floors ascended")
-        floors_ascended_meters = self.gauge(
-            "floors_ascended_meters", "Floors ascended in meters"
-        )
+        floors_ascended_meters = self.gauge("floors_ascended_meters", "Floors ascended in meters")
         floors_descended = self.gauge("floors_descended", "Floors descended")
         floors_descended_meters = self.gauge(
             "floors_descended_meters", "Floors descended in meters"
@@ -155,6 +152,62 @@ class PrometheusMetrics:
         floors_ascended_meters.set(data["floorsAscendedInMeters"])
         floors_descended.set(data["floorsDescended"])
         floors_descended_meters.set(data["floorsDescendedInMeters"])
+
+    def _stress(self, data):
+        """
+        'averageStressLevel': 21,
+        'maxStressLevel': 83,
+
+        'stressDuration': 8400,
+        'stressPercentage': 18.82,
+        'stressQualifier': 'UNKNOWN',
+        'totalStressDuration': 44640,
+
+        'highStressDuration': 360,
+        'highStressPercentage': 0.81,
+        'lowStressDuration': 7080,
+        'lowStressPercentage': 15.86,
+        'mediumStressDuration': 960,
+        'mediumStressPercentage': 2.15,
+        'restStressDuration': 28920,
+        'restStressPercentage': 64.78,
+        'activityStressDuration': 4020,
+        'activityStressPercentage': 9.01,
+        'uncategorizedStressDuration': 3300,
+        'uncategorizedStressPercentage': 7.39,
+
+        high + low + medium = stressDuration
+        high + low + medium + activity + uncategorized = totalStressDuration
+        The stress level range is from 0 to 100, where 0 to 25 is a resting state,
+        26 to 50 is low stress, 51 to 75 is medium stress, and 76 to 100 is a high stress state.
+        """
+        if (
+            data.get("averageStressLevel") is None
+            or data.get("maxStressLevel") is None
+            or data.get("stressDuration") is None
+            or data.get("totalStressDuration") is None
+        ):
+            return
+
+        # create metrics
+        average_stress_level = self.gauge("average_stress_level", "Average stress level")
+        max_stress_level = self.gauge("max_stress_level", "Maximum stress level")
+        high_stress_percentage = self.gauge("high_stress_percentage", "High stress percentage")
+        medium_stress_percentage = self.gauge(
+            "medium_stress_percentage", "Medium stress percentage"
+        )
+        low_stress_percentage = self.gauge("low_stress_percentage", "Low stress percentage")
+        resting_stress_percentage = self.gauge(
+            "resting_stress_percentage", "Resting stress percentage"
+        )
+
+        # set metrics values
+        average_stress_level.set(data["averageStressLevel"])
+        max_stress_level.set(data["maxStressLevel"])
+        high_stress_percentage.set(data["highStressPercentage"])
+        medium_stress_percentage.set(data["mediumStressPercentage"])
+        low_stress_percentage.set(data["lowStressPercentage"])
+        resting_stress_percentage.set(data["restStressPercentage"])
 
     def sleep(self, data):
         utc = datetime.datetime.now()
