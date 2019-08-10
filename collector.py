@@ -58,4 +58,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    delay = os.environ.get("MONITOR_DELAY_SEC", 300)
+    while True:
+        main()
+        time.sleep(int(delay))
